@@ -1,0 +1,70 @@
+#static stability of a fixed wing aircraft. Use the inputs taking a cesna plane. and plot graph for longitudnal . assume unknown values and solve
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- Cessna 172 Example ---
+# (Approximate values, adjust as needed for your specific aircraft)
+
+# Wing
+S_w = 16.2  # Wing area (m^2)
+c_w = 1.46  # Mean aerodynamic chord (m)
+AR_w = 7.32  # Aspect ratio
+C_L_alpha_w = 5.0  # Wing lift curve slope (per radian)
+i_w = 0.0  # Wing incidence angle (radians)
+
+# Tail
+S_t = 2.0  # Tail area (m^2)
+l_t = 3.0  # Tail moment arm (distance from wing AC to tail AC) (m)
+c_t = 0.91  # Mean aerodynamic chord of tail (m)
+AR_t = 3.0  # Aspect ratio of tail
+C_L_alpha_t = 4.0  # Tail lift curve slope (per radian)
+i_t = -2.0 * np.pi/180  # Tail incidence angle (radians, negative for downwash)
+epsilon_0 = 0.0  # Downwash at zero lift (radians)
+d_epsilon_d_alpha = 0.4  # Downwash derivative (change in downwash per unit change in wing angle of attack)
+
+# Other
+C_M_ac_w = -0.05  # Wing pitching moment coefficient about aerodynamic center
+C_M_0 = 0.08  # Zero-lift pitching moment coefficient of the entire aircraft
+rho = 1.225  # Air density (kg/m^3)
+V = 50.0  # Airspeed (m/s)
+
+# --- Calculations ---
+
+# Neutral point
+x_np = (l_t * S_t * C_L_alpha_t / (S_w * c_w * C_L_alpha_w)) * (1 - d_epsilon_d_alpha)
+print("Neutral point location (x_np): {:.2f} m".format(x_np))
+
+# Static margin
+# Assuming CG location is at 25% of the wing's mean aerodynamic chord
+x_cg = 0.25 * c_w
+static_margin = (x_np - x_cg) / c_w
+print("Static margin: {:.2f}".format(static_margin))
+
+# Pitching moment curve
+alpha_range = np.linspace(-10, 10, 50) * np.pi/180 # Range of angles of attack (radians)
+C_M = []
+for alpha in alpha_range:
+  C_L_w = C_L_alpha_w * (alpha + i_w)
+  epsilon = epsilon_0 + d_epsilon_d_alpha * alpha
+  C_L_t = C_L_alpha_t * (alpha + i_t - epsilon)
+  C_M_current = C_M_ac_w + C_L_w * (x_cg/c_w - 0.25) - (l_t * S_t / (S_w * c_w)) * C_L_t
+  C_M.append(C_M_current)
+
+# --- Plotting ---
+plt.figure(figsize=(8, 6))
+plt.plot(alpha_range * 180/np.pi, C_M)
+plt.xlabel("Angle of Attack (degrees)")
+plt.ylabel("Pitching Moment Coefficient (C_M)")
+plt.title("Longitudinal Static Stability of Cessna 172")
+plt.grid(True)
+plt.axhline(y=0, color='black', linestyle='--')
+plt.show()
+
+# --- Interpretation ---
+if static_margin > 0:
+  print("The aircraft has positive static stability (unstable).")
+elif static_margin < 0:
+  print("The aircraft has negative static stability (stable).")
+else:
+  print("The aircraft has neutral static stability.")
